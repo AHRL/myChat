@@ -1,9 +1,6 @@
 <template>
   <div id="loginWrapper">
-    <div v-if="!isConnect">
-      <p id="info">connecting to server...</p>
-    </div>
-    <div v-else>
+    <div>
       <div id="nickWrapper" v-show="isLoginPage">
         <h3>Login</h3>
         <div class="formItem">
@@ -16,7 +13,7 @@
         </div>
         <div class="formItem">
           <a class="toBtn" href="javascript:;" @click="isLoginPage = !isLoginPage">还没有账号？注册一个吧</a>
-          <p id="loginBtn">登录</p>
+          <p id="loginBtn" @click="signIn">登录</p>
         </div>
       </div>
       <div id="registWrapper" v-show="!isLoginPage">
@@ -31,7 +28,7 @@
         </div>
         <div class="formItem">
           <a class="toBtn" href="javascript:;" @click="isLoginPage = !isLoginPage">已有账号，快去登录吧</a>
-          <p>注册</p>
+          <p @click="signUp">注册</p>
         </div>
       </div>
     </div>
@@ -42,11 +39,52 @@ export default {
   data () {
     return {
       isLoginPage: true,
-      isConnect: true,
       LUsername: '',
       LPassword: '',
       RUsername: '',
       RPassword: ''
+    }
+  },
+  methods: {
+    signUp () {
+      if (this.RUsername.trim() === '') {
+        alert('用户名不能为空')
+      } else if (this.RPassword.trim() === '') {
+        alert('密码不能为空')
+      } else {
+        this.$axios.post('/signUp', {
+          username: this.RUsername,
+          password: this.RPassword
+        }).then(res => {
+          alert(res.data.msg)
+          if (res.data.status === 200) {
+            this.isLoginPage = !this.isLoginPage
+            this.LUsername = this.RUsername
+          }
+        })
+      }
+    },
+    signIn () {
+      if (this.LUsername.trim() === '') {
+        alert('用户名不能为空')
+      } else if (this.LPassword.trim() === '') {
+        alert('密码不能为空')
+      } else {
+        this.$axios.post('/signIn', {
+          username: this.LUsername,
+          password: this.LPassword
+        }).then(res => {
+          console.log(res.data.data)
+          alert(res.data.msg)
+          if (res.data.status === 200) {
+            this.$store.commit('LOGIN_IN', res.data.data)
+            this.$socket.emit('signIn', this.LUsername)
+            this.$router.push('/mychat')
+          }
+        }).catch(err => {
+          console.log(err)
+        })
+      }
     }
   }
 }
