@@ -47,7 +47,6 @@ app.use(router.routes()).use(router.allowedMethods())
 
 let user = []
 io.on('connection', function (socket) {
-  console.log(socket.id)
   socket.on('signIn', function (username) {
     user.push({
       username: username,
@@ -56,12 +55,12 @@ io.on('connection', function (socket) {
     io.sockets.emit('getOnlineNum', user.length)
   })
   socket.on('receive', function (msg, from, to) {
-    console.log(msg, from, to)
     let date = new Date().toTimeString().substr(0, 8)
     let socketId = getSocketId(user, to)
     let meSocketId = getSocketId(user, from)
     io.sockets.sockets[meSocketId].emit('newMsg', {from: from, to: to, msg: msg, date: date})
     io.sockets.sockets[socketId].emit('newMsg', {from: from, to: to, msg: msg, date: date})
+    DBModule.NewsList.addNews({from: from, to: to, msg: msg, date: date})
   })
   socket.on('updateFriends', function (username, friend) {
     let socketId = getSocketId(user, friend)
@@ -69,7 +68,9 @@ io.on('connection', function (socket) {
   })
   socket.on('disconnect', function () {
     const item = getUsername(user, socket.id)
-    user.splice(item.index, 1)
+    if (item.index) {
+      user.splice(item.index, 1)
+    }
     io.sockets.emit('getOnlineNum', user.length)
     console.log(item.username + '下线')
   })

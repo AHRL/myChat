@@ -15,14 +15,13 @@ module.exports = class extends baseController {
         const userObj = {
           username: params.username,
           password: params.password,
-          token: '123ds465sxsdfs',
-          friends: [],
-          newsList: []
+          token: '123ds465sxsdfs', // 登录验证token
+          friends: [], // 好友
+          status: false // 登录状态
         }
         const result = await this.DBModule.User.saveUser(userObj)
         if (result.status === 'success') {
           ctx.body = { status: 200, msg: result.msg, data: result.data }
-          console.log(result)
         } else {
           ctx.body = { status: 400, msg: '注册失败，请重试' }
         }
@@ -92,14 +91,14 @@ module.exports = class extends baseController {
     // }
 
     // 获取消息记录
-    this.getNewsList = async (ctx, next) => {
-      const params = ctx.request.body
-      const isFind = await this.DBModule.User.findUser({ username: params.username })
-      if (isFind.status === 'success') {
-        ctx.body = { state: 200, msg: '获取成功', data: isFind.data[0].newsList }
-      } else {
-        ctx.body = { state: 403, msg: '获取失败' }
-      }
-    }
+    // this.getNewsList = async (ctx, next) => {
+    //   const params = ctx.request.body
+    //   const isFind = await this.DBModule.User.findUser({ username: params.username })
+    //   if (isFind.status === 'success') {
+    //     ctx.body = { state: 200, msg: '获取成功', data: isFind.data[0].newsList }
+    //   } else {
+    //     ctx.body = { state: 403, msg: '获取失败' }
+    //   }
+    // }
   }
 }

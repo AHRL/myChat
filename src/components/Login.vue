@@ -72,9 +72,9 @@ export default {
       } else {
         this.$axios.post('/signIn', {
           username: this.LUsername,
-          password: this.LPassword
+          password: this.LPassword,
+          status: true
         }).then(res => {
-          console.log(res.data.data)
           alert(res.data.msg)
           if (res.data.status === 200) {
             this.$store.commit('LOGIN_IN', res.data.data)

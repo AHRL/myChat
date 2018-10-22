@@ -18,7 +18,7 @@
       <div class="rightSide">
         <div id="chatPlace">
           <p class="nowChatName">{{ friends.length > 0 ? friends[nowChat].username : '' }}</p>
-          <div v-for="(item, i) in getCurClientNews()" :key="i" class="msgBox">
+          <div v-for="(item, i) in newMsg" :key="i" class="msgBox">
             <div>
               <p :style="{ float: item.from === curUsername ? 'right' : 'left' }">{{ item.date }}</p>
             </div>
@@ -26,10 +26,10 @@
           </div>
         </div>
         <div>
-          <textarea name="message" class="msgText" v-if="friends.length>0" v-model="friends[nowChat].textmsg"></textarea>
-          <textarea name="message" class="msgText" v-else></textarea>
+          <textarea name="message" class="msgText" @keyup.enter="send" v-if="friends.length>0" v-model="friends[nowChat].textmsg"></textarea>
+          <textarea name="message" class="msgText" @keyup.enter="send" v-else></textarea>
         </div>
-        <div class="sendBtn" @click="send" @keyup.enter="send">发送</div>
+        <div class="sendBtn" @click="send">发送</div>
       </div>
     </div>
     <div class="add" :style="{display: isAdd ? 'block' : 'none'}">
@@ -65,10 +65,11 @@ export default {
         username: this.curUsername,
         friend: this.friend
       }).then(res => {
-        console.log(res)
-        this.$store.commit('updateFriends', res.data.data)
-        this.friends = res.data.data
-        this.$socket.emit('updateFriends', this.curUsername, this.friend)
+        if (res.data.status === 200) {
+          this.$store.commit('updateFriends', res.data.data)
+          this.friends = res.data.data
+          this.$socket.emit('updateFriends', this.curUsername, this.friend)
+        }
       }).catch(err => {
         console.log(err)
       })
@@ -77,8 +78,15 @@ export default {
       let curNews = this.newMsg.filter((item) => {
         return (item.from === this.friends[this.nowChat].username && item.to === this.curUsername) || (item.from === this.curUsername && item.to === this.friends[this.nowChat].username)
       })
-      console.log(curNews)
       return curNews
+    },
+    getNewsList () {
+      this.$axios.post('/getNews', {
+        username: this.curUsername
+      }).then(res => {
+        console.log(res)
+        this.newMsg = res.data.data
+      }).catch(err => console.log(err))
     }
   },
   sockets: { // 不能改
@@ -97,12 +105,8 @@ export default {
     }
   },
   mounted () {
-    const username = this.$store.state.username
-    this.$axios.post('/getNewsList', {
-      username: username
-    }).then(res => {
-      this.newsList = res.data.data
-    }).catch(err => console.log(err))
+    this.getNewsList()
+    console.log(this.newMsg)
   }
 }
 </script>

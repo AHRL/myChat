@@ -1,7 +1,8 @@
-const UserController = require('../controller/userController')
+const NewsListController = require('../controller/newsListController')
 
 module.exports = function (koaRouter, options) {
-  const User = new UserController(options)
+  const News = new NewsListController(options)
 
-  koaRouter.post('/getNewsList', User.getNewsList)
+  koaRouter.post('/addNews', News.addNews)
+  koaRouter.post('/getNews', News.findNews)
 }

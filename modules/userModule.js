@@ -6,7 +6,7 @@ module.exports = class {
       password: String,
       token: String,
       friends: Array,
-      newsList: Array
+      status: Boolean
     })
     // 创建模型,模型的实例叫做文档
     const User = mongoose.model('User', userSchema)
