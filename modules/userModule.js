@@ -37,6 +37,29 @@ module.exports = class {
       })
     }
 
+    // 更新用户状态，防止重复登录
+    this.updateStatus = function (option) {
+      return new Promise((resolve, reject) => {
+        User.find({'username': option.username}, function (err, data) {
+          if (err) {
+            reject(new Error({ status: 'failed', msg: '查找用户失败' }))
+          } else {
+            if (data[0].status === true) {
+              resolve({ status: 'onLine', msg: '该用户已在线' })
+            } else {
+              User.updateMany({'username': option.username}, {$set: {'status': true}}, function (err, data) {
+                if (err) {
+                  reject(new Error({ status: 'failed', msg: '更新状态失败' }))
+                } else {
+                  resolve({ status: 'success', msg: '更新状态成功' })
+                }
+              })
+            }
+          }
+        })
+      })
+    }
+
     // 添加好友
     this.addFriend = function (option) {
       return new Promise((resolve, reject) => {

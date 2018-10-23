@@ -45,49 +45,46 @@ app.use(async (ctx, next) => {
 
 app.use(router.routes()).use(router.allowedMethods())
 
-let user = []
+let user = {}
+let socketID = {}
 io.on('connection', function (socket) {
   socket.on('signIn', function (username) {
-    user.push({
-      username: username,
-      socketId: socket.id
-    })
-    io.sockets.emit('getOnlineNum', user.length)
+    user[username] = socket.id
+    socketID[socket.id] = username
+    io.sockets.emit('getOnlineNum', Object.keys(socketID).length)
   })
   socket.on('receive', function (msg, from, to) {
     let date = new Date().toTimeString().substr(0, 8)
-    let socketId = getSocketId(user, to)
-    let meSocketId = getSocketId(user, from)
+    let socketId = user[to]
+    let meSocketId = user[from]
     io.sockets.sockets[meSocketId].emit('newMsg', {from: from, to: to, msg: msg, date: date})
     io.sockets.sockets[socketId].emit('newMsg', {from: from, to: to, msg: msg, date: date})
     DBModule.NewsList.addNews({from: from, to: to, msg: msg, date: date})
   })
   socket.on('updateFriends', function (username, friend) {
-    let socketId = getSocketId(user, friend)
+    let socketId = user[username]
     io.sockets.sockets[socketId].emit('updateFriends', username)
   })
   socket.on('disconnect', function () {
-    const item = getUsername(user, socket.id)
-    if (item.index) {
-      user.splice(item.index, 1)
-    }
-    io.sockets.emit('getOnlineNum', user.length)
-    console.log(item.username + '下线')
+    const username = socketID[socket.id]
+    delete socketID[socket.id]
+    io.sockets.emit('getOnlineNum', Object.keys(socketID).length)
+    console.log(username + '下线')
   })
 })
 
-function getSocketId (user, username) {
-  for (let i = 0; i < user.length; i++) {
-    if (user[i].username === username) return user[i].socketId
-  }
-}
+// function getSocketId (user, username) {
+//   for (let i = 0; i < user.length; i++) {
+//     if (user[i].username === username) return user[i].socketId
+//   }
+// }
 
-function getUsername (user, socketId) {
-  for (let i = 0; i < user.length; i++) {
-    if (user[i].socketId === socketId) {
-      return {username: user[i].username, index: i}
-    }
-  }
-}
+// function getUsername (user, socketId) {
+//   for (let i = 0; i < user.length; i++) {
+//     if (user[i].socketId === socketId) {
+//       return {username: user[i].username, index: i}
+//     }
+//   }
+// }
 
 console.log(`the server is start at port ${process.env.PORT}`)

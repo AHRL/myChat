@@ -35,7 +35,14 @@ module.exports = class extends baseController {
       if (isFind.status === 'success') {
         if (isFind.data.length > 0) {
           if (isFind.data[0].password === params.password) {
-            ctx.body = { status: 200, msg: '验证成功', data: isFind.data[0] }
+            const isUpdateSuccess = await this.DBModule.User.updateStatus({ username: params.username, status: true })
+            if (isUpdateSuccess.status === 'success') {
+              ctx.body = { status: 200, msg: '验证成功', data: isFind.data[0] }
+            } else if (isUpdateSuccess.status === 'onLine') {
+              ctx.body = { status: 401, msg: '该用户已在线' }
+            } else {
+              ctx.body = { status: 401, msg: '更新状态失败' }
+            }
           } else {
             ctx.body = { status: 401, msg: '密码错误' }
           }

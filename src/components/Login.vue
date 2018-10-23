@@ -5,11 +5,11 @@
         <h3>Login</h3>
         <div class="formItem">
           <label for="LUsername">用户名：</label>
-          <input v-model="LUsername" type="text" name="LUsername" placeholder="username">
+          <input v-model="LUsername" @keyup.enter="signIn" type="text" name="LUsername" placeholder="username">
         </div>
         <div class="formItem">
           <label for="LPassword">密码：</label>
-          <input v-model="LPassword" type="password" name="LPassword" placeholder="password">
+          <input v-model="LPassword" @keyup.enter="signIn" type="password" name="LPassword" placeholder="password">
         </div>
         <div class="formItem">
           <a class="toBtn" href="javascript:;" @click="isLoginPage = !isLoginPage">还没有账号？注册一个吧</a>
@@ -20,11 +20,11 @@
         <h3>Register</h3>
         <div class="formItem">
           <label for="RUsername">用户名：</label>
-          <input v-model="RUsername" type="text" name="RUsername" placeholder="username">
+          <input v-model="RUsername" @keyup.enter="signUp" type="text" name="RUsername" placeholder="username">
         </div>
         <div class="formItem">
           <label for="RPassword">密码：</label>
-          <input v-model="RPassword" type="password" name="RPassword" placeholder="password">
+          <input v-model="RPassword" @keyup.enter="signUp" type="password" name="RPassword" placeholder="password">
         </div>
         <div class="formItem">
           <a class="toBtn" href="javascript:;" @click="isLoginPage = !isLoginPage">已有账号，快去登录吧</a>
@@ -75,6 +75,7 @@ export default {
           password: this.LPassword,
           status: true
         }).then(res => {
+          console.log(res)
           alert(res.data.msg)
           if (res.data.status === 200) {
             this.$store.commit('LOGIN_IN', res.data.data)
