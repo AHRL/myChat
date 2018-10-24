@@ -39,9 +39,9 @@ module.exports = class extends baseController {
             if (isUpdateSuccess.status === 'success') {
               ctx.body = { status: 200, msg: '验证成功', data: isFind.data[0] }
             } else if (isUpdateSuccess.status === 'onLine') {
-              ctx.body = { status: 401, msg: '该用户已在线' }
+              ctx.body = { status: 'onLine', msg: '该用户已在线' }
             } else {
-              ctx.body = { status: 401, msg: '更新状态失败' }
+              ctx.body = { status: 400, msg: '更新状态失败' }
             }
           } else {
             ctx.body = { status: 401, msg: '密码错误' }

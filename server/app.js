@@ -51,6 +51,8 @@ io.on('connection', function (socket) {
   socket.on('signIn', function (username) {
     user[username] = socket.id
     socketID[socket.id] = username
+    console.log(socketID)
+    console.log(user)
     io.sockets.emit('getOnlineNum', Object.keys(socketID).length)
   })
   socket.on('receive', function (msg, from, to) {
@@ -62,29 +64,28 @@ io.on('connection', function (socket) {
     DBModule.NewsList.addNews({from: from, to: to, msg: msg, date: date})
   })
   socket.on('updateFriends', function (username, friend) {
-    let socketId = user[username]
+    let socketId = user[friend]
     io.sockets.sockets[socketId].emit('updateFriends', username)
   })
-  socket.on('disconnect', function () {
+  socket.on('forceOffLine', async function (username) {
+    console.log(username)
+    let socketId = user[username]
+    if (socketId) {
+      console.log('1111')
+      delete socketID[socketId]
+      io.sockets.sockets[socketId].emit('offLine')
+    }
+    await DBModule.User.updateStatus({ 'username': username, 'status': false })
+  })
+  socket.on('disconnect', async function () {
     const username = socketID[socket.id]
+    const result = await DBModule.User.updateStatus({ 'username': username, 'status': false })
+    console.log(result)
     delete socketID[socket.id]
+    delete user[username]
     io.sockets.emit('getOnlineNum', Object.keys(socketID).length)
     console.log(username + '下线')
   })
 })
-
-// function getSocketId (user, username) {
-//   for (let i = 0; i < user.length; i++) {
-//     if (user[i].username === username) return user[i].socketId
-//   }
-// }
-
-// function getUsername (user, socketId) {
-//   for (let i = 0; i < user.length; i++) {
-//     if (user[i].socketId === socketId) {
-//       return {username: user[i].username, index: i}
-//     }
-//   }
-// }
 
 console.log(`the server is start at port ${process.env.PORT}`)

@@ -20,12 +20,16 @@
           <p class="nowChatName">{{ friends.length > 0 ? friends[nowChat].username : '' }}</p>
           <div v-for="(item, i) in newMsg" :key="i" class="msgBox">
             <div>
-              <p :style="{ float: item.from === curUsername ? 'right' : 'left' }">{{ item.date }}</p>
+              <p :style="{ float: item.from === curUsername ? 'right' : 'left'}">{{ item.date }}</p>
             </div>
             <p :class="{'myMsg': item.from === curUsername, 'msg': true}">{{ item.msg }}</p>
           </div>
         </div>
         <div>
+          <div class="toolsBar">
+            <img :src="require('../../static/img/emoji.png')" alt="">
+            <img :src="require('../../static/img/picture.png')" alt="">
+          </div>
           <textarea name="message" class="msgText" @keyup.enter="send" v-if="friends.length>0" v-model="friends[nowChat].textmsg"></textarea>
           <textarea name="message" class="msgText" @keyup.enter="send" v-else></textarea>
         </div>
@@ -102,6 +106,10 @@ export default {
         username: data,
         textmsg: ''
       })
+    },
+    offLine () {
+      this.$store.commit('LOGIN_OUT')
+      this.$router.push('/login')
     }
   },
   mounted () {
@@ -183,16 +191,33 @@ export default {
 .rightSide{
   width: calc(100% - 150px);
   height: calc(100% - 60px);
+  overflow-x: hidden;
 }
 .rightSide #chatPlace{
-  width: 100%;
-  height: calc(100% - 110px);
+  width: calc(100% + 20px);
+  height: calc(100% - 140px);
   overflow-y: scroll;
+  padding-right: 20px;
 }
+/* #chatPlace::-webkit-scrollbar {
+    display: none;
+} */
 #chatPlace .nowChatName{
   padding-left: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgb(230, 228, 228);
+}
+.toolsBar{
+  height: 30px;
+  border-top: 1px solid rgb(223, 221, 221);
+  display: flex;
+  flex-direction: row;
+}
+.toolsBar img {
+  height: 80%;
+  margin-left: 10px;
+  margin-top: 5px;
+  cursor: pointer;
 }
 .rightSide .msgText{
   width: calc(100% - 10px);
@@ -201,7 +226,6 @@ export default {
   resize: none;
   border: none;
   outline: none;
-  border-top: 1px solid rgb(223, 221, 221);
   padding-top: 5px;
 }
 .sendBtn{
@@ -254,6 +278,7 @@ img.addFriend{
   overflow: hidden;
 }
 .msgBox p {
+  max-width: 80%;
   margin: 5px;
 }
 .msg{

@@ -39,15 +39,16 @@ module.exports = class {
 
     // 更新用户状态，防止重复登录
     this.updateStatus = function (option) {
+      console.log(option)
       return new Promise((resolve, reject) => {
         User.find({'username': option.username}, function (err, data) {
           if (err) {
             reject(new Error({ status: 'failed', msg: '查找用户失败' }))
           } else {
-            if (data[0].status === true) {
+            if (data[0].status === option.status) {
               resolve({ status: 'onLine', msg: '该用户已在线' })
             } else {
-              User.updateMany({'username': option.username}, {$set: {'status': true}}, function (err, data) {
+              User.updateMany({'username': option.username}, {$set: {'status': option.status}}, function (err, data) {
                 if (err) {
                   reject(new Error({ status: 'failed', msg: '更新状态失败' }))
                 } else {

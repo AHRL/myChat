@@ -20,6 +20,8 @@ export default new Vuex.Store({
     LOGIN_OUT (state) {
       localStorage.removeItem('token')
       state.username = ''
+      state.token = ''
+      state.friends = []
     },
     updateFriends (state, data) {
       state.friends = data

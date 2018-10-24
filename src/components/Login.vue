@@ -32,6 +32,10 @@
         </div>
       </div>
     </div>
+    <div class="repeatDialog" :style="{display: repeatdialog ? 'block' : 'none'}">
+      <div>该账号在另一地点登录，确定继续登录吗？</div>
+      <p @click="forceOffLine">确定</p><p @click="repeatdialog = !repeatdialog">取消</p>
+    </div>
   </div>
 </template>
 <script>
@@ -42,7 +46,8 @@ export default {
       LUsername: '',
       LPassword: '',
       RUsername: '',
-      RPassword: ''
+      RPassword: '',
+      repeatdialog: false
     }
   },
   methods: {
@@ -76,17 +81,41 @@ export default {
           status: true
         }).then(res => {
           console.log(res)
-          alert(res.data.msg)
+          // alert(res.data.msg)
           if (res.data.status === 200) {
             this.$store.commit('LOGIN_IN', res.data.data)
             this.$socket.emit('signIn', this.LUsername)
             this.$router.push('/mychat')
+          } else if (res.data.status === 'onLine') {
+            this.repeatdialog = true
           }
         }).catch(err => {
           console.log(err)
         })
       }
+    },
+    forceOffLine () {
+      this.$socket.emit('forceOffLine', this.LUsername)
+      this.$axios.post('/signIn', {
+        username: this.LUsername,
+        password: this.LPassword,
+        status: true
+      }).then(res => {
+        console.log(res)
+        // alert(res.data.msg)
+        if (res.data.status === 200) {
+          this.$store.commit('LOGIN_IN', res.data.data)
+          this.$socket.emit('signIn', this.LUsername)
+          this.$router.push('/mychat')
+        } else if (res.data.status === 'onLine') {
+          this.repeatdialog = true
+        }
+      }).catch(err => {
+        console.log(err)
+      })
     }
+  },
+  socket: {
   }
 }
 </script>
@@ -139,5 +168,26 @@ input{
   border: 5px;
   cursor: pointer;
   float:right;
+}
+.repeatDialog{
+  width: 200px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  text-align: center;
+  padding: 10px;
+  border: 1px solid #71b0c9;
+  border-radius: 5px;
+}
+.repeatDialog p{
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 3px;
+  background: #71b0c9;
+  color:white;
+  margin-right: 5px;
+  cursor: pointer;
 }
 </style>
