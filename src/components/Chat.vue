@@ -115,6 +115,17 @@ export default {
   mounted () {
     this.getNewsList()
     console.log(this.newMsg)
+  },
+  beforeRouteLeave (to, from, next) {
+    this.$axios.post('/forceUpdateStatus', {
+      username: this.$store.state.username,
+      status: false
+    }).then(res => {
+      console.log(res.data)
+      if (res.data.status === 200) {
+        next()
+      }
+    })
   }
 }
 </script>

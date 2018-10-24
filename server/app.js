@@ -68,16 +68,15 @@ io.on('connection', function (socket) {
     io.sockets.sockets[socketId].emit('updateFriends', username)
   })
   socket.on('forceOffLine', async function (username) {
-    console.log(username)
     let socketId = user[username]
     if (socketId) {
-      console.log('1111')
       delete socketID[socketId]
       io.sockets.sockets[socketId].emit('offLine')
     }
     await DBModule.User.updateStatus({ 'username': username, 'status': false })
   })
   socket.on('disconnect', async function () {
+    console.log('aaa')
     const username = socketID[socket.id]
     const result = await DBModule.User.updateStatus({ 'username': username, 'status': false })
     console.log(result)
