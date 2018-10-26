@@ -22,18 +22,24 @@
             <div>
               <p :style="{ float: item.from === curUsername ? 'right' : 'left'}">{{ item.date }}</p>
             </div>
-            <p :class="{'myMsg': item.from === curUsername, 'msg': true}">{{ item.msg }}</p>
+            <p :class="{'myMsg': item.from === curUsername, 'msg': true}" v-html="changeMsg(item.msg)"></p>
           </div>
         </div>
-        <div>
+        <div class="editBox">
           <div class="toolsBar">
-            <img :src="require('../../static/img/emoji.png')" alt="">
-            <img :src="require('../../static/img/picture.png')" alt="">
+            <img class="emojiBtn" :src="require('../../static/img/emoji.png')" alt="" @click="emojiShow = !emojiShow">
+            <div class="upLoadImg">
+              <img :src="require('../../static/img/picture.png')" alt="">
+              <input type="file" ref="upLoadImgBtn" @change="sendImg" accept="image/*" />
+            </div>
+            <div class="emojiWrapper" v-show="emojiShow">
+              <img v-for="i in emojiTotal" @click="addEmoji(i+1)" :key="i" :src="require('../../static/emoji/'+ (i+1) +'.gif')" alt="">
+            </div>
           </div>
           <textarea name="message" class="msgText" @keyup.enter="send" v-if="friends.length>0" v-model="friends[nowChat].textmsg"></textarea>
-          <textarea name="message" class="msgText" @keyup.enter="send" v-else></textarea>
+          <textarea name="message" class="msgText" @keyup.enter="send" v-model="textmsg" v-else></textarea>
         </div>
-        <div class="sendBtn" @click="send">发送</div>
+        <div class="sendBtn" @click="send(friends[nowChat].textmsg)">发送</div>
       </div>
     </div>
     <div class="add" :style="{display: isAdd ? 'block' : 'none'}">
@@ -57,12 +63,18 @@ export default {
       id: '',
       onlineNum: 0,
       textmsg: '',
-      newMsg: []
+      newMsg: [],
+      emojiShow: false,
+      emojiTotal: 68
     }
   },
   methods: {
-    send () {
-      this.$socket.emit('receive', this.friends[this.nowChat].textmsg, this.curUsername, this.friends[this.nowChat].username)
+    send (msg) {
+      if (this.friends.length > 0) {
+        this.$socket.emit('receive', msg, this.curUsername, this.friends[this.nowChat].username)
+      } else {
+        alert('你还没有好友，先去加好友吧')
+      }
     },
     addFriend () {
       this.$axios.post('/addFriend', {
@@ -78,12 +90,12 @@ export default {
         console.log(err)
       })
     },
-    getCurClientNews () {
-      let curNews = this.newMsg.filter((item) => {
-        return (item.from === this.friends[this.nowChat].username && item.to === this.curUsername) || (item.from === this.curUsername && item.to === this.friends[this.nowChat].username)
-      })
-      return curNews
-    },
+    // getCurClientNews () {
+    //   let curNews = this.newMsg.filter((item) => {
+    //     return (item.from === this.friends[this.nowChat].username && item.to === this.curUsername) || (item.from === this.curUsername && item.to === this.friends[this.nowChat].username)
+    //   })
+    //   return curNews
+    // },
     getNewsList () {
       this.$axios.post('/getNews', {
         username: this.curUsername
@@ -91,7 +103,79 @@ export default {
         console.log(res)
         this.newMsg = res.data.data
       }).catch(err => console.log(err))
+    },
+    addEmoji (index) {
+      if (this.friends.length > 0) {
+        this.friends[this.nowChat].textmsg += '[emoji:' + index + ']'
+      } else {
+        this.textmsg += '[emoji:' + index + ']'
+      }
+      this.emojiShow = false
+    },
+    changeMsg (msg) {
+      var emojiIndex = 0
+      let picName = ''
+      let result = msg
+      let reg = /\[emoji:\d+\]/g
+      let picReg = /\[img:.+?\]/g
+      let match = reg.exec(msg)
+      let picMatch = picReg.exec(msg)
+      while (match) {
+        emojiIndex = match[0].slice(7, -1)
+        if (emojiIndex > this.emojiTotal) {
+          result = result.replace(match[0], '[X]')
+        } else {
+          result = result.replace(match[0], `<img class="emoji" src="../../static/emoji/${emojiIndex}.gif" />`)
+        }
+        match = reg.exec(msg)
+      }
+      console.log(picMatch)
+      while (picMatch) {
+        picName = picMatch[0].slice(5, -1)
+        console.log(picName)
+        result = result.replace(picMatch[0], `<img style="max-width: 200px" src="${picName}" />`)
+        picMatch = picReg.exec(msg)
+      }
+      return result
+    },
+    emojiWrapperHide () {
+      var that = this
+      document.body.onclick = function (e) {
+        console.log(e.target.className)
+        console.log(e.target.className !== 'emojiWrapper')
+        if (e.target.className !== 'emojiWrapper' && e.target.className !== 'emojiBtn') {
+          console.log('bbb')
+          that.emojiShow = false
+        }
+      }
+    },
+    sendImg () {
+      console.log(this.$refs.upLoadImgBtn.files[0])
+      const file = this.$refs.upLoadImgBtn.files[0]
+      let formData = new FormData()
+      formData.append('file', file)
+      this.$axios.post('/uploadImg', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }).then(res => {
+        if (res.data.status === 200) {
+          console.log('111')
+          console.log(res.data.data.pictureUrl)
+          if (this.friends.length > 0) {
+            this.$socket.emit('receive', '[img:' + res.data.data.pictureUrl + ']', this.curUsername, this.friends[this.nowChat].username)
+          } else {
+            alert('你还没有好友，先去加好友吧')
+          }
+        }
+      })
     }
+  },
+  updated: function () {
+    this.$nextTick(function () {
+      var div = document.getElementById('chatPlace')
+      div.scrollTop = div.scrollHeight + 20
+    })
   },
   sockets: { // 不能改
     getOnlineNum: function (num) {
@@ -114,7 +198,7 @@ export default {
   },
   mounted () {
     this.getNewsList()
-    console.log(this.newMsg)
+    this.emojiWrapperHide()
   },
   beforeRouteLeave (to, from, next) {
     this.$axios.post('/forceUpdateStatus', {
@@ -203,6 +287,7 @@ export default {
   width: calc(100% - 150px);
   height: calc(100% - 60px);
   overflow-x: hidden;
+  position: relative;
 }
 .rightSide #chatPlace{
   width: calc(100% + 20px);
@@ -214,21 +299,52 @@ export default {
     display: none;
 } */
 #chatPlace .nowChatName{
-  padding-left: 10px;
-  padding-bottom: 10px;
+  padding: 10px 0 10px 10px;
   border-bottom: 1px solid rgb(230, 228, 228);
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: white;
+  width: 100%;
+  margin: 0;
 }
 .toolsBar{
   height: 30px;
   border-top: 1px solid rgb(223, 221, 221);
   display: flex;
   flex-direction: row;
+  position: relative;
 }
 .toolsBar img {
   height: 80%;
   margin-left: 10px;
   margin-top: 5px;
   cursor: pointer;
+}
+.upLoadImg{
+  position: relative;
+  width:35px;
+  overflow: hidden;
+}
+.upLoadImg input{
+  position: absolute;
+  left: 10px;
+  top: 5px;
+  opacity: 0;
+  filter: opacity(0);
+}
+.emojiWrapper{
+  position: absolute;
+  top: -200px;
+  left: 0;
+  z-index: 10;
+  background: #dededf;
+  border-radius: 5px;
+}
+.emojiWrapper img {
+  width: 30px;
+  height: 30px;
+  margin: 3px 3px;
 }
 .rightSide .msgText{
   width: calc(100% - 10px);

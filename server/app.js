@@ -11,9 +11,12 @@ const mongodb = require('../config/db')(config)
 const DBModule = new (require('../modules/baseModule'))(mongodb)
 const router = require('../routes/baseRouter')({ config: config, DBModule: DBModule })
 const info = require('../config/info')
+const convert = require('koa-convert')
+const koaStatic = require('koa-static')
+const path = require('path')
 
 // 服务端口，默认为3000
-process.env.PORT = info.serverAddress.port
+process.env.PORT = info.serverAddress.port || 3000
 
 const server = require('http').createServer(app.callback())
 const io = require('socket.io')(server)
@@ -33,7 +36,11 @@ app.use(cors()) // 允许跨域
 app.use(json())
 app.use(logger())
 
-app.use(require('koa-static')(`${__dirname}/static`))
+// app.use(require('koa-static')(`${__dirname}/static`))
+// 由于koa-static目前不支持koa2，所以只能用koa-convert封装一下
+app.use(convert(koaStatic(
+  path.join(__dirname, `../static`)
+)))
 
 // 启动的日志
 app.use(async (ctx, next) => {
@@ -45,6 +52,7 @@ app.use(async (ctx, next) => {
 
 app.use(router.routes()).use(router.allowedMethods())
 
+// socket
 let user = {}
 let socketID = {}
 io.on('connection', function (socket) {
@@ -56,11 +64,14 @@ io.on('connection', function (socket) {
     io.sockets.emit('getOnlineNum', Object.keys(socketID).length)
   })
   socket.on('receive', function (msg, from, to) {
+    console.log(msg)
     let date = new Date().toTimeString().substr(0, 8)
     let socketId = user[to]
     let meSocketId = user[from]
     io.sockets.sockets[meSocketId].emit('newMsg', {from: from, to: to, msg: msg, date: date})
-    io.sockets.sockets[socketId].emit('newMsg', {from: from, to: to, msg: msg, date: date})
+    if (socketId) {
+      io.sockets.sockets[socketId].emit('newMsg', {from: from, to: to, msg: msg, date: date})
+    }
     DBModule.NewsList.addNews({from: from, to: to, msg: msg, date: date})
   })
   socket.on('updateFriends', function (username, friend) {

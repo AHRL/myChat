@@ -10,4 +10,5 @@ module.exports = function (koaRouter, options) {
   // post请求
   koaRouter.post('/signUp', user.signUp) // 注册
   koaRouter.post('/signIn', user.signIn) // 登录
+  koaRouter.post('/forceUpdateStatus', user.forceUpdateStatus)
 }
