@@ -63,7 +63,9 @@ module.exports = class {
     }
 
     this.forceUpdateStatus = function (option) {
+      console.log(option)
       if (option.username) {
+        console.log('222')
         return new Promise((resolve, reject) => {
           User.find({'username': option.username}, function (err, data) {
             if (err) {

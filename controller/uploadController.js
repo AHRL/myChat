@@ -2,6 +2,7 @@ const path = require('path')
 const fs = require('fs')
 const Busboy = require('busboy')
 const baseController = require('./baseController')
+const send = require('koa-send')
 
 /**
  * 同步创建文件目录
@@ -38,7 +39,7 @@ function getSuffixName (fileName) {
  * @param {object} options 文件上传参数 fileType文件类型，path文件存放路径
  * @return {promise}
  */
-function uploadFile (ctx, options) {
+function uploadImg (ctx, options) {
   let req = ctx.req
   // console.log(req)
   // let res = ctx.res
@@ -92,14 +93,65 @@ function uploadFile (ctx, options) {
   }
 }
 
+function uploadFile (ctx, options) {
+  let req = ctx.req
+  // console.log(req)
+  // let res = ctx.res
+  let busboy = new Busboy({headers: req.headers})
+
+  // 读取类型
+  let fileType = options.fileType || 'common' // 默认文件夹为common
+  let filePath = path.join(options.path, fileType)
+  let mkdirResult = mkdirSync(filePath)
+  if (mkdirResult) {
+    return new Promise((resolve, reject) => {
+      console.log('文件上传中')
+      let result = { // 默认返回
+        success: false,
+        data: {}
+      }
+
+      // 解析请求文件事件
+      busboy.on('file', function (filedname, file, filename, encoding, mimetype) {
+        let _uploadFilePath = path.join(filePath, filename)
+        let saveTo = path.join(_uploadFilePath)
+
+        // 文件保存到指定路径
+        file.pipe(fs.createWriteStream(saveTo)) // 先读入再读出来写
+
+        // 文件保存到指定路径
+        file.on('end', function () {
+          result.success = true
+          result.message = '文件上传成功'
+          result.data = {
+            pictureUrl: `http://${ctx.host}/file/${fileType}/${filename}`
+          }
+          console.log('文件上传成功')
+          resolve(result)
+        })
+      })
+
+      // 解析结束事件
+      busboy.on('finish', function () {
+        console.log('文件上传结束')
+        resolve(result)
+      })
+      busboy.on('error', function (err) {
+        console.log(err)
+        console.log('文件上传出错')
+      })
+      req.pipe(busboy)
+    })
+  }
+}
+
 module.exports = class extends baseController {
   constructor (options) {
     super(options)
 
-    this.uploadFile = async (ctx, next) => {
-      console.log(ctx.request.body)
+    this.uploadImg = async (ctx, next) => {
       let serverFilePath = path.join(__dirname, '../static/img')
-      const result = await uploadFile(ctx, {
+      const result = await uploadImg(ctx, {
         fileType: 'album',
         path: serverFilePath
       })
@@ -108,6 +160,29 @@ module.exports = class extends baseController {
       } else {
         ctx.body = { status: 401, msg: '上传失败' }
       }
+    }
+
+    this.uploadFile = async (ctx, next) => {
+      let serverFilePath = path.join(__dirname, '../static/file')
+      const result = await uploadFile(ctx, {
+        fileType: 'file',
+        path: serverFilePath
+      })
+      if (result.success === true) {
+        ctx.body = { status: 200, msg: '上传成功', data: result.data }
+      } else {
+        ctx.body = { status: 401, msg: '上传失败' }
+      }
+    }
+
+    // 下载文件
+    this.download = async (ctx) => {
+      const fileName = ctx.params.name
+      const path = `file/file/${fileName}`
+      // 设置实体头（表示消息体的附加信息的头字段）,提示浏览器以文件下载的方式打开
+      // 也可以直接设置 ctx.set("Content-disposition", "attachment; filename=" + fileName);
+      ctx.attachment(path)
+      await send(ctx, path)
     }
   }
 }

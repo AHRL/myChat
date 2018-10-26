@@ -58,10 +58,14 @@ module.exports = class extends baseController {
     this.forceUpdateStatus = async (ctx, next) => {
       const params = ctx.request.body
       const isUpdateSuccess = await this.DBModule.User.forceUpdateStatus(params)
-      if (isUpdateSuccess.status === 'success') {
-        ctx.body = { status: 200, msg: '更新状态成功' }
+      if (isUpdateSuccess) {
+        if (isUpdateSuccess.status === 'success') {
+          ctx.body = { status: 200, msg: '更新状态成功' }
+        } else {
+          ctx.body = { status: 400, msg: '更新状态失败' }
+        }
       } else {
-        ctx.body = { status: 400, msg: '更新状态失败' }
+        ctx.body = { status: 200 }
       }
     }
 

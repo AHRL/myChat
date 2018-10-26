@@ -30,8 +30,10 @@ onerror(app)
 app.use(bodyparser({
   enableTypes: ['json', 'form', 'text'], // 请求类型
   jsonLimit: '5mb', // 控制parser转换大小，默认1mb
-  formLimit: '4096kb' // 控制post大小，默认56kb
+  formLimit: '4096kb', // 控制post大小，默认56kb
+  fileLimit: '2000mb'
 }))
+
 app.use(cors()) // 允许跨域
 app.use(json())
 app.use(logger())

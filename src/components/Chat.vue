@@ -32,6 +32,10 @@
               <img :src="require('../../static/img/picture.png')" alt="">
               <input type="file" ref="upLoadImgBtn" @change="sendImg" accept="image/*" />
             </div>
+            <div class="upLoadFile">
+              <img :src="require('../../static/img/uploadFile.png')" alt="">
+              <input type="file" ref="upLoadFileBtn" @change="sendFile" />
+            </div>
             <div class="emojiWrapper" v-show="emojiShow">
               <img v-for="i in emojiTotal" @click="addEmoji(i+1)" :key="i" :src="require('../../static/emoji/'+ (i+1) +'.gif')" alt="">
             </div>
@@ -90,12 +94,6 @@ export default {
         console.log(err)
       })
     },
-    // getCurClientNews () {
-    //   let curNews = this.newMsg.filter((item) => {
-    //     return (item.from === this.friends[this.nowChat].username && item.to === this.curUsername) || (item.from === this.curUsername && item.to === this.friends[this.nowChat].username)
-    //   })
-    //   return curNews
-    // },
     getNewsList () {
       this.$axios.post('/getNews', {
         username: this.curUsername
@@ -113,13 +111,17 @@ export default {
       this.emojiShow = false
     },
     changeMsg (msg) {
-      var emojiIndex = 0
+      let emojiIndex = 0
       let picName = ''
+      let fileName = ''
       let result = msg
       let reg = /\[emoji:\d+\]/g
       let picReg = /\[img:.+?\]/g
+      let fileReg = /\[file:.+?\]/g
       let match = reg.exec(msg)
       let picMatch = picReg.exec(msg)
+      let fileMatch = fileReg.exec(msg)
+      let fileType = ''
       while (match) {
         emojiIndex = match[0].slice(7, -1)
         if (emojiIndex > this.emojiTotal) {
@@ -129,28 +131,41 @@ export default {
         }
         match = reg.exec(msg)
       }
-      console.log(picMatch)
       while (picMatch) {
         picName = picMatch[0].slice(5, -1)
-        console.log(picName)
         result = result.replace(picMatch[0], `<img style="max-width: 200px" src="${picName}" />`)
         picMatch = picReg.exec(msg)
+      }
+      while (fileMatch) {
+        fileName = fileMatch[0].slice(6, -1)
+        console.log('111')
+        console.log(fileName)
+        var index = fileName.lastIndexOf('/')
+        var str = fileName.substring(index + 1, fileName.length)
+        var strFileName = str.replace(/^.+?\\([^\\]+?)(\.[^.\\]*?)?$/gi, '$1')
+        var fileExt = str.replace(/.+\./, '').toLowerCase()
+        console.log(fileExt)
+        if (fileExt === 'doc') {
+          fileType = 'word'
+        } else if (fileExt === 'xlsx') {
+          fileType = 'excel'
+        } else {
+          fileType = 'file'
+        }
+        result = result.replace(fileMatch[0], `<p class="fileMsg"><img src="../../static/img/${fileType}.png" ><span>${strFileName}</span><a href="${fileName}" class="downloadBtn">下载</a></p>`)
+        fileMatch = fileReg.exec(msg)
       }
       return result
     },
     emojiWrapperHide () {
       var that = this
       document.body.onclick = function (e) {
-        console.log(e.target.className)
-        console.log(e.target.className !== 'emojiWrapper')
         if (e.target.className !== 'emojiWrapper' && e.target.className !== 'emojiBtn') {
-          console.log('bbb')
           that.emojiShow = false
         }
       }
     },
     sendImg () {
-      console.log(this.$refs.upLoadImgBtn.files[0])
       const file = this.$refs.upLoadImgBtn.files[0]
       let formData = new FormData()
       formData.append('file', file)
@@ -160,8 +175,6 @@ export default {
         }
       }).then(res => {
         if (res.data.status === 200) {
-          console.log('111')
-          console.log(res.data.data.pictureUrl)
           if (this.friends.length > 0) {
             this.$socket.emit('receive', '[img:' + res.data.data.pictureUrl + ']', this.curUsername, this.friends[this.nowChat].username)
           } else {
@@ -169,6 +182,30 @@ export default {
           }
         }
       })
+    },
+    sendFile () {
+      const file = this.$refs.upLoadFileBtn.files[0]
+      let formData = new FormData()
+      formData.append('file', file)
+      this.$axios.post('/uploadFile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }).then(res => {
+        if (res.data.status === 200) {
+          if (this.friends.length > 0) {
+            this.$socket.emit('receive', '[file:' + res.data.data.pictureUrl + ']', this.curUsername, this.friends[this.nowChat].username)
+          } else {
+            alert('你还没有好友，先去加好友吧')
+          }
+        }
+      })
+    },
+    downloadFile (e) {
+      let btn = e.target
+      if (btn.className === 'downloadBtn') {
+        window.open('http://' + location.hostname + ':' + location.port + '/download/' + btn.getAttribute('data-url'), '_self')
+      }
     }
   },
   updated: function () {
@@ -213,7 +250,7 @@ export default {
   }
 }
 </script>
-<style scoped>
+<style>
 .connect{
   padding-left: 20px;
   padding-right: 20px;
@@ -321,12 +358,13 @@ export default {
   margin-top: 5px;
   cursor: pointer;
 }
-.upLoadImg{
+.upLoadImg,.upLoadFile{
   position: relative;
   width:35px;
   overflow: hidden;
+  cursor: pointer;
 }
-.upLoadImg input{
+.upLoadImg input,.upLoadFile input{
   position: absolute;
   left: 10px;
   top: 5px;
@@ -405,7 +443,6 @@ img.addFriend{
   overflow: hidden;
 }
 .msgBox p {
-  max-width: 80%;
   margin: 5px;
 }
 .msg{
@@ -418,5 +455,30 @@ img.addFriend{
 .myMsg{
   background: #71b0c9;
   float: right;
+  color: white;
+}
+.fileMsg{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.fileMsg img {
+  width: 50px;
+  height: 50px;
+}
+.fileMsg span{
+  margin: 0 5px;
+}
+.fileMsg span:last-child{
+  display: inline-block;
+  cursor: pointer;
+}
+a.downloadBtn{
+  text-decoration: none;
+  color: black;
+}
+.myMsg a.downloadBtn{
+  text-decoration: none;
+  color: white;
 }
 </style>
