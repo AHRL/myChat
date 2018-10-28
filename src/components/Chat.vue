@@ -138,13 +138,11 @@ export default {
       }
       while (fileMatch) {
         fileName = fileMatch[0].slice(6, -1)
-        console.log('111')
         console.log(fileName)
         var index = fileName.lastIndexOf('/')
         var str = fileName.substring(index + 1, fileName.length)
         var strFileName = str.replace(/^.+?\\([^\\]+?)(\.[^.\\]*?)?$/gi, '$1')
         var fileExt = str.replace(/.+\./, '').toLowerCase()
-        console.log(fileExt)
         if (fileExt === 'doc') {
           fileType = 'word'
         } else if (fileExt === 'xlsx') {

@@ -2,7 +2,7 @@ const path = require('path')
 const fs = require('fs')
 const Busboy = require('busboy')
 const baseController = require('./baseController')
-const send = require('koa-send')
+// const send = require('koa-send')
 
 /**
  * 同步创建文件目录
@@ -176,13 +176,13 @@ module.exports = class extends baseController {
     }
 
     // 下载文件
-    this.download = async (ctx) => {
-      const fileName = ctx.params.name
-      const path = `file/file/${fileName}`
-      // 设置实体头（表示消息体的附加信息的头字段）,提示浏览器以文件下载的方式打开
-      // 也可以直接设置 ctx.set("Content-disposition", "attachment; filename=" + fileName);
-      ctx.attachment(path)
-      await send(ctx, path)
-    }
+    // this.download = async (ctx) => {
+    //   const fileName = ctx.params.name
+    //   const path = `file/file/${fileName}`
+    //   // 设置实体头（表示消息体的附加信息的头字段）,提示浏览器以文件下载的方式打开
+    //   // 也可以直接设置 ctx.set("Content-disposition", "attachment; filename=" + fileName);
+    //   ctx.attachment(path)
+    //   await send(ctx, path)
+    // }
   }
 }
