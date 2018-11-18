@@ -9,7 +9,7 @@
       </div>
       <div class="leftSide">
           <ul>
-            <li v-for="(friend,i) in friends" :key="i" :class="{'activeLi': i === nowChat}" @click="nowChat = i">
+            <li v-for="(friend,i) in friends" :key="i" :class="{'activeLi': i === nowChat}" @click="chatWith(i)">
               <img :src="require('../../static/img/favicon.png')" :alt="friend.username">
               <p>{{ friend.username }}</p>
             </li>
@@ -18,7 +18,7 @@
       <div class="rightSide">
         <div id="chatPlace">
           <p class="nowChatName">{{ friends.length > 0 ? friends[nowChat].username : '' }}</p>
-          <div v-for="(item, i) in newMsg" :key="i" class="msgBox">
+          <div v-for="(item, i) in newMsg" :key="i" v-show="item.from === friends[nowChat].username || item.to === friends[nowChat].username" class="msgBox">
             <div>
               <p :style="{ float: item.from === curUsername ? 'right' : 'left'}">{{ item.date }}</p>
             </div>
@@ -40,8 +40,12 @@
               <img v-for="i in emojiTotal" @click="addEmoji(i+1)" :key="i" :src="require('../../static/emoji/'+ (i+1) +'.gif')" alt="">
             </div>
           </div>
-          <textarea name="message" class="msgText" @keyup.enter="send" v-if="friends.length>0" v-model="friends[nowChat].textmsg"></textarea>
-          <textarea name="message" class="msgText" @keyup.enter="send" v-model="textmsg" v-else></textarea>
+          <div class="msgText">
+            <edit-pre ref="editPre" v-if="friends.length>0" @keyup.enter="send()" :child="friends[nowChat].textmsg" @updateMsg="updateMsg"></edit-pre>
+            <!-- <edit-pre ref="editPre" v-else @keyup.enter="send(textmsg)" :child="textmsg" @updateMsg="updateMsg"></edit-pre> -->
+          </div>
+          <!-- <textarea name="message" class="msgText" @keyup.enter="send" v-if="friends.length>0" v-model="friends[nowChat].textmsg"></textarea>
+          <textarea name="message" class="msgText" @keyup.enter="send" v-model="textmsg" v-else></textarea> -->
         </div>
         <div class="sendBtn" @click="send(friends[nowChat].textmsg)">发送</div>
       </div>
@@ -55,6 +59,7 @@
   </div>
 </template>
 <script>
+import EditPre from './EditDiv'
 export default {
   data () {
     return {
@@ -69,13 +74,62 @@ export default {
       textmsg: '',
       newMsg: [],
       emojiShow: false,
-      emojiTotal: 68
+      emojiTotal: 68,
+      imgArr: []
     }
   },
+  components: {
+    EditPre
+  },
   methods: {
-    send (msg) {
+    chatWith (i) {
+      this.nowChat = i
+      this.$refs.editPre.setInnerText()
+    },
+    updateMsg (msg) {
       if (this.friends.length > 0) {
-        this.$socket.emit('receive', msg, this.curUsername, this.friends[this.nowChat].username)
+        this.friends[this.nowChat].textmsg = msg
+      } else {
+        this.textmsg = msg
+      }
+    },
+    send () {
+      let imgList = document.querySelector('.msgText').querySelectorAll('img')
+      let isNull = true
+      let formData = new FormData()
+      for (let i = 0; i < imgList.length; i++) {
+        this.imgArr.map((ele, idx) => {
+          if (ele.name === imgList[i].getAttribute('data-name')) {
+            isNull = false
+            formData.append(ele.name, ele.fileObj)
+          }
+        })
+      }
+      if (this.friends.length > 0) {
+        if (!isNull) {
+          this.$axios.post('/uploadImg', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }).then(res => {
+            if (res.data.status === 200) {
+              for (let i = 0; i < imgList.length; i++) {
+                for (let key in res.data.data) {
+                  if (imgList[i].getAttribute('data-name') === key) {
+                    imgList[i].src = res.data.data[key]
+                  }
+                }
+              }
+              this.$socket.emit('receive', document.querySelector('.msgText pre').innerHTML, this.curUsername, this.friends[this.nowChat].username)
+              this.friends[this.nowChat].textmsg = ''
+              this.$refs.editPre.setInnerText()
+            }
+          })
+        } else {
+          this.$socket.emit('receive', document.querySelector('.msgText pre').innerHTML, this.curUsername, this.friends[this.nowChat].username)
+          this.friends[this.nowChat].textmsg = ''
+          this.$refs.editPre.setInnerText()
+        }
       } else {
         alert('你还没有好友，先去加好友吧')
       }
@@ -103,39 +157,38 @@ export default {
       }).catch(err => console.log(err))
     },
     addEmoji (index) {
-      if (this.friends.length > 0) {
-        this.friends[this.nowChat].textmsg += '[emoji:' + index + ']'
-      } else {
-        this.textmsg += '[emoji:' + index + ']'
-      }
-      this.emojiShow = false
+      this.$axios.post('searchEmojiUrl', {
+        emojiId: index
+      }).then(res => {
+        if (this.friends.length > 0) {
+          this.friends[this.nowChat].textmsg += '<img src="' + res.data.data.emojiUrl + '" alt="emoji">'
+        } else {
+          this.textmsg += '<img src="' + res.data.data.emojiUrl + '" alt="emoji">'
+        }
+        this.emojiShow = false
+      }).catch(err => console.log(err))
     },
     changeMsg (msg) {
-      let emojiIndex = 0
-      let picName = ''
+      // let emojiIndex = 0
+      // let picName = ''
       let fileName = ''
       let result = msg
-      let reg = /\[emoji:\d+\]/g
-      let picReg = /\[img:.+?\]/g
+      // let reg = /\[emoji:\d+\]/g
+      // let picReg = /\[img:.+?\]/g
       let fileReg = /\[file:.+?\]/g
-      let match = reg.exec(msg)
-      let picMatch = picReg.exec(msg)
+      // let match = reg.exec(msg)
+      // let picMatch = picReg.exec(msg)
       let fileMatch = fileReg.exec(msg)
       let fileType = ''
-      while (match) {
-        emojiIndex = match[0].slice(7, -1)
-        if (emojiIndex > this.emojiTotal) {
-          result = result.replace(match[0], '[X]')
-        } else {
-          result = result.replace(match[0], `<img class="emoji" src="../../static/emoji/${emojiIndex}.gif" />`)
-        }
-        match = reg.exec(msg)
-      }
-      while (picMatch) {
-        picName = picMatch[0].slice(5, -1)
-        result = result.replace(picMatch[0], `<img style="max-width: 200px" src="${picName}" />`)
-        picMatch = picReg.exec(msg)
-      }
+      // while (match) {
+      //   emojiIndex = match[0].slice(7, -1)
+      //   if (emojiIndex > this.emojiTotal) {
+      //     result = result.replace(match[0], '[X]')
+      //   } else {
+      //     result = result.replace(match[0], `<img class="emoji" src="../../static/emoji/${emojiIndex}.gif" />`)
+      //   }
+      //   match = reg.exec(msg)
+      // }
       while (fileMatch) {
         fileName = fileMatch[0].slice(6, -1)
         console.log(fileName)
@@ -165,21 +218,34 @@ export default {
     },
     sendImg () {
       const file = this.$refs.upLoadImgBtn.files[0]
-      let formData = new FormData()
-      formData.append('file', file)
-      this.$axios.post('/uploadImg', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }).then(res => {
-        if (res.data.status === 200) {
+      this.imgArr.push({'name': file.name, 'fileObj': file})
+      console.log(file)
+      console.log(this.imgArr)
+      // this.formData.append(file.name, file)
+      if (window.FileReader) {
+        let fileReader = new FileReader()
+        fileReader.onload = event => {
           if (this.friends.length > 0) {
-            this.$socket.emit('receive', '[img:' + res.data.data.pictureUrl + ']', this.curUsername, this.friends[this.nowChat].username)
+            this.friends[this.nowChat].textmsg += `<img style="max-width: 200px" src="${event.target.result}" data-name="${file.name}" alt="[图片]">`
           } else {
-            alert('你还没有好友，先去加好友吧')
+            this.textmsg += `<img style="max-width: 200px" src="${event.target.result}" data-name="${file.name}" alt="[图片]">`
           }
         }
-      })
+        fileReader.readAsDataURL(file)
+      }
+      // this.$axios.post('/uploadImg', formData, {
+      //   headers: {
+      //     'Content-Type': 'multipart/form-data'
+      //   }
+      // }).then(res => {
+      //   if (res.data.status === 200) {
+      //     if (this.friends.length > 0) {
+      //       this.$socket.emit('receive', '[img:' + res.data.data.pictureUrl + ']', this.curUsername, this.friends[this.nowChat].username)
+      //     } else {
+      //       alert('你还没有好友，先去加好友吧')
+      //     }
+      //   }
+      // })
     },
     sendFile () {
       const file = this.$refs.upLoadFileBtn.files[0]
@@ -234,6 +300,7 @@ export default {
   mounted () {
     this.getNewsList()
     this.emojiWrapperHide()
+    this.formData = new FormData()
   },
   beforeRouteLeave (to, from, next) {
     this.$axios.post('/forceUpdateStatus', {
@@ -385,11 +452,6 @@ export default {
 .rightSide .msgText{
   width: calc(100% - 10px);
   height: 60px;
-  font-size: 16px;
-  resize: none;
-  border: none;
-  outline: none;
-  padding-top: 5px;
 }
 .sendBtn{
   padding: 5px 10px;
@@ -398,6 +460,7 @@ export default {
   color:white;
   float: right;
   margin-right: 5px;
+  margin-top: 10px;
   cursor: pointer;
 }
 img.addFriend{

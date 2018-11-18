@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "formidable": "^1.2.1",
     "mongoose": "^5.3.4",
     "socket.io": "^2.1.1",
     "underscore": "^1.9.1",

@@ -66,7 +66,7 @@ io.on('connection', function (socket) {
     io.sockets.emit('getOnlineNum', Object.keys(socketID).length)
   })
   socket.on('receive', function (msg, from, to) {
-    console.log(msg)
+    console.log(msg, from, to)
     let date = new Date().toTimeString().substr(0, 8)
     let socketId = user[to]
     let meSocketId = user[from]

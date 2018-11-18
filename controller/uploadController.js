@@ -1,6 +1,8 @@
 const path = require('path')
 const fs = require('fs')
 const Busboy = require('busboy')
+// const formidable = require('formidable')
+const inspect = require('util').inspect
 const baseController = require('./baseController')
 // const send = require('koa-send')
 
@@ -39,13 +41,64 @@ function getSuffixName (fileName) {
  * @param {object} options 文件上传参数 fileType文件类型，path文件存放路径
  * @return {promise}
  */
-function uploadImg (ctx, options) {
-  let req = ctx.req
-  // console.log(req)
-  // let res = ctx.res
-  let busboy = new Busboy({headers: req.headers})
+// function uploadImg (ctx, options) {
+//   let req = ctx.req
+//   // console.log(req)
+//   // let res = ctx.res
+//   let busboy = new Busboy({headers: req.headers})
 
-  // 读取类型
+//   // 读取类型
+//   let fileType = options.fileType || 'common' // 默认文件夹为common
+//   let filePath = path.join(options.path, fileType)
+//   let mkdirResult = mkdirSync(filePath)
+//   if (mkdirResult) {
+//     return new Promise((resolve, reject) => {
+//       console.log('文件上传中')
+//       let result = { // 默认返回
+//         success: false,
+//         data: {}
+//       }
+
+//       // 解析请求文件事件
+//       busboy.on('file', function (filedname, file, filename, encoding, mimetype) {
+//         // toString()里面
+//         let fileName = new Date().getTime() + '.' + getSuffixName(filename)
+//         let _uploadFilePath = path.join(filePath, fileName)
+//         let saveTo = path.join(_uploadFilePath)
+
+//         // 文件保存到指定路径
+//         file.pipe(fs.createWriteStream(saveTo)) // 先读入再读出来写
+
+//         // 文件保存到指定路径
+//         file.on('end', function () {
+//           result.success = true
+//           result.message = '文件上传成功'
+//           result.data = {
+//             pictureUrl: `//${ctx.host}/img/${fileType}/${fileName}`
+//           }
+//           console.log('文件上传成功')
+//           resolve(result)
+//         })
+//       })
+
+//       // 解析结束事件
+//       busboy.on('finish', function () {
+//         console.log('文件上传结束')
+//         resolve(result)
+//       })
+//       busboy.on('error', function (err) {
+//         console.log(err)
+//         console.log('文件上传出错')
+//       })
+//       req.pipe(busboy)
+//     })
+//   }
+// }
+function uploadImg (ctx, options) {
+  const req = ctx.req
+
+  var busboy = new Busboy({ headers: req.headers })
+
   let fileType = options.fileType || 'common' // 默认文件夹为common
   let filePath = path.join(options.path, fileType)
   let mkdirResult = mkdirSync(filePath)
@@ -56,11 +109,9 @@ function uploadImg (ctx, options) {
         success: false,
         data: {}
       }
-
-      // 解析请求文件事件
-      busboy.on('file', function (filedname, file, filename, encoding, mimetype) {
-        // toString()里面
+      busboy.on('file', function (fieldname, file, filename, encoding, mimetype) {
         let fileName = new Date().getTime() + '.' + getSuffixName(filename)
+        console.log('File [' + fieldname + ']: filename: ' + filename)
         let _uploadFilePath = path.join(filePath, fileName)
         let saveTo = path.join(_uploadFilePath)
 
@@ -69,19 +120,17 @@ function uploadImg (ctx, options) {
 
         // 文件保存到指定路径
         file.on('end', function () {
-          result.success = true
-          result.message = '文件上传成功'
-          result.data = {
-            pictureUrl: `//${ctx.host}/img/${fileType}/${fileName}`
-          }
-          console.log('文件上传成功')
-          resolve(result)
+          console.log('File [' + fieldname + '] Finished')
+          result.data[filename] = `http://${ctx.host}/img/${fileType}/${fileName}`
         })
       })
-
-      // 解析结束事件
+      busboy.on('field', function (fieldname, val, fieldnameTruncated, valTruncated) {
+        console.log('Field [' + fieldname + ']: value: ' + inspect(val))
+      })
       busboy.on('finish', function () {
-        console.log('文件上传结束')
+        result.success = true
+        result.message = '文件上传成功'
+        console.log('文件上传成功')
         resolve(result)
       })
       busboy.on('error', function (err) {
