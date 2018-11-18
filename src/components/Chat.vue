@@ -42,12 +42,12 @@
           </div>
           <div class="msgText">
             <edit-pre ref="editPre" v-if="friends.length>0" @keyup.enter="send()" :child="friends[nowChat].textmsg" @updateMsg="updateMsg"></edit-pre>
-            <!-- <edit-pre ref="editPre" v-else @keyup.enter="send(textmsg)" :child="textmsg" @updateMsg="updateMsg"></edit-pre> -->
+            <edit-pre ref="editPre" v-else @keyup.enter="send(textmsg)" :child="textmsg" @updateMsg="updateMsg"></edit-pre>
           </div>
           <!-- <textarea name="message" class="msgText" @keyup.enter="send" v-if="friends.length>0" v-model="friends[nowChat].textmsg"></textarea>
           <textarea name="message" class="msgText" @keyup.enter="send" v-model="textmsg" v-else></textarea> -->
         </div>
-        <div class="sendBtn" @click="send(friends[nowChat].textmsg)">发送</div>
+        <div class="sendBtn" @click="send()">发送</div>
       </div>
     </div>
     <div class="add" :style="{display: isAdd ? 'block' : 'none'}">
