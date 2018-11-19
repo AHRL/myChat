@@ -170,26 +170,11 @@ export default {
       }).catch(err => console.log(err))
     },
     changeMsg (msg) {
-      // let emojiIndex = 0
-      // let picName = ''
       let fileName = ''
       let result = msg
-      // let reg = /\[emoji:\d+\]/g
-      // let picReg = /\[img:.+?\]/g
       let fileReg = /\[file:.+?\]/g
-      // let match = reg.exec(msg)
-      // let picMatch = picReg.exec(msg)
       let fileMatch = fileReg.exec(msg)
       let fileType = ''
-      // while (match) {
-      //   emojiIndex = match[0].slice(7, -1)
-      //   if (emojiIndex > this.emojiTotal) {
-      //     result = result.replace(match[0], '[X]')
-      //   } else {
-      //     result = result.replace(match[0], `<img class="emoji" src="../../static/emoji/${emojiIndex}.gif" />`)
-      //   }
-      //   match = reg.exec(msg)
-      // }
       while (fileMatch) {
         fileName = fileMatch[0].slice(6, -1)
         console.log(fileName)
@@ -265,12 +250,6 @@ export default {
           }
         }
       })
-    },
-    downloadFile (e) {
-      let btn = e.target
-      if (btn.className === 'downloadBtn') {
-        window.open('http://' + location.hostname + ':' + location.port + '/download/' + btn.getAttribute('data-url'), '_self')
-      }
     }
   },
   updated: function () {
