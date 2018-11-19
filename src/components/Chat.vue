@@ -105,6 +105,7 @@ export default {
           }
         })
       }
+      this.imgArr = []
       if (this.friends.length > 0) {
         if (!isNull) {
           this.$axios.post('/uploadImg', formData, {
@@ -157,7 +158,7 @@ export default {
       }).catch(err => console.log(err))
     },
     addEmoji (index) {
-      this.$axios.post('searchEmojiUrl', {
+      this.$axios.post('/searchEmojiUrl', {
         emojiId: index
       }).then(res => {
         if (this.friends.length > 0) {
@@ -300,7 +301,6 @@ export default {
   mounted () {
     this.getNewsList()
     this.emojiWrapperHide()
-    this.formData = new FormData()
   },
   beforeRouteLeave (to, from, next) {
     this.$axios.post('/forceUpdateStatus', {

@@ -36,6 +36,9 @@ export default {
     setInnerText () {
       this.$refs.editDiv.innerHTML = ''
       this.innerText = this.child
+    },
+    sendMsg () {
+      this.$emit('send')
     }
   }
 }
